@@ -8,7 +8,8 @@ USER_SYSTEMD_LOCATION=${HOME_DIRECTORY}/.config/systemd/user
 FILES=notify-package-update \
       notify-package-update.service \
       notify-package-update.timer \
-      requirements.txt
+      requirements.txt \
+      config.yaml
 TEMPLATE=notify-package-update.service.tmpl
 NAME=notify-package-update
 
