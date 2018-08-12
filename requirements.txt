@@ -1,0 +1,6 @@
+docopt
+feedparser
+pip
+setuptools
+slackweb
+pyyaml

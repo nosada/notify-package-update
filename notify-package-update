@@ -1,0 +1,129 @@
+#!/bin/env python
+
+"""Search given package(s) in recent updated packages on Arch Linux.
+
+Usage:
+    notify-package-update [-h | --help]
+    notify-package-update [-c CONFIG] [-d | --dry-run]
+    notify-package-update [-u SLACK_WEBHOOK_URL] [-d | --dry-run]
+                          [PACKAGE ...]
+
+Options:
+    -h  --help          Show help (this message)
+    -d  --dry-run       Write search result only to stdout,
+                        not posting to Slack
+    -c                  Specify config file (written in yaml)
+    -u                  Specify Slack incoming-webhook URL
+    PACKAGE             Package name(s) you want to search in
+                        recent updates
+"""
+
+from docopt import docopt
+import feedparser
+import slackweb
+import yaml
+
+
+class ParsingConfig():
+    def __init__(self, config=None):
+        if config:
+            with open(config, 'r') as config_object:
+                self.config = yaml.load(config_object)
+        else:
+            self.config = None
+
+
+class PackageUpdate(ParsingConfig):
+    def __init__(self, config=None):
+        super(PackageUpdate, self).__init__(config)
+        if self.config:
+            self.packages = self.config["packages"]
+        else:
+            self.packages = None
+        arch_packages_feed = "https://www.archlinux.org/feeds/packages/"
+        self._feed = feedparser.parse(arch_packages_feed)
+        self._recent_updates = {}
+
+    def _get_recent_updated_packages(self):
+        for pkg in self._feed["entries"]:
+            name, version, arch = pkg["title"].split(' ')
+            self._recent_updates[name] = {
+                "version": version,
+                "arch": arch
+            }
+
+    def _search_updated_packages(self, package_name):
+        if package_name in self._recent_updates.keys():
+            return self._recent_updates[package_name]
+        else:
+            return None
+
+    def find(self, package_name):
+        self._get_recent_updated_packages()
+        found_package = self._search_updated_packages(package_name)
+        if found_package:
+            version = found_package["version"]
+            arch = found_package["arch"]
+        else:
+            version = arch = None
+        return (version, arch)
+
+    def find_by_list(self):
+        for package_name in self.packages:
+            version, arch = self.find(package_name)
+            yield (package_name, version, arch)
+
+
+class Slack(ParsingConfig):
+    def __init__(self, config=None, **kwargs):
+        super(Slack, self).__init__(config)
+        if self.config:
+            self.slack = self.config["slack"]["webhook_url"]
+            self.username = self.config["slack"]["username"]
+            self.icon_emoji = self.config["slack"]["icon_emoji"]
+        else:
+            self.slack = slackweb.Slack(url=kwargs["webhook_url"])
+            self.username = kwargs["username"]
+            self.icon_emoji = kwargs["icon_emoji"]
+
+    def post(self, text):
+        self.slack.notify(text=text,
+                          username=self.username,
+                          icon_emoji=self.icon_emoji)
+
+
+def report(slack, name, version, arch, dry_run=False):
+    if version and arch:
+        message = "`{n}` is updated to {v} (arch: {a})".format(
+            n=name, v=version, a=arch)
+        if dry_run:
+            print(message)
+        else:
+            slack.post(message)
+
+
+if __name__ == "__main__":
+    ARGS = docopt(__doc__)
+
+    DRY_RUN = ARGS["-d"] or ARGS["--dry-run"]
+
+    if ARGS["-c"]:
+        CONFIG = ARGS["CONFIG"]
+        PACKAGE = PackageUpdate(CONFIG)
+        SLACK = Slack(CONFIG)
+        for name, version, arch in PACKAGE.find_by_list():
+            report(SLACK, name, version, arch, dry_run=DRY_RUN)
+    else:
+        WEBHOOK_URL = ARGS["SLACK_WEBHOOK_URL"]
+        PACKAGES = ARGS["PACKAGE"]
+        USERNAME = "package-updates-notifier"
+        ICON_EMOJI = ":fearful:"
+
+        PACKAGE = PackageUpdate()
+        SLACK = Slack(webhook_url=WEBHOOK_URL,
+                      username=USERNAME,
+                      icon_emoji=ICON_EMOJI)
+
+        for name in PACKAGES:
+            version, arch = PACKAGE.find(name)
+            report(SLACK, name, version, arch, dry_run=DRY_RUN)

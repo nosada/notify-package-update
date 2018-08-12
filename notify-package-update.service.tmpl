@@ -1,0 +1,9 @@
+[Unit]
+Description=Notify specific package update
+
+[Service]
+Type=oneshot
+ExecStart=bash -c "source VENV_LOCATION/notify-package-update/bin/activate; SCRIPT_LOCATION/notify-package-update -c SCRIPT_LOCATION/config.yaml"
+
+[Install]
+WantedBy=default.target
