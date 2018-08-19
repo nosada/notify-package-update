@@ -1,0 +1,9 @@
+[Unit]
+Description=Notify specific package update (on Docker container)
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/docker run --rm IMAGE_NAME
+
+[Install]
+WantedBy=default.target
