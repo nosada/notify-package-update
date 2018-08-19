@@ -16,7 +16,8 @@ NAME=notify-package-update
 FILES_FOR_DOCKER=notify-package-update \
 		 requirements.txt \
 		 Dockerfile \
-		 .dockerignore
+		 .dockerignore \
+		 config.yaml
 TEMPLATE_DOCKER=notify-package-update.service.docker.tmpl
 DOCKER_IMAGE_NAME=local/${NAME}:latest
 
