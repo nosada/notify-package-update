@@ -47,9 +47,9 @@ build-docker-image: ${FILES_FOR_DOCKER}
 	docker build . -t ${DOCKER_IMAGE_NAME}
 
 activate-systemd-services:
-	systemctl --user daemon-reload
 	systemctl --user enable ${NAME}.service
 	systemctl --user enable ${NAME}.timer
+	systemctl --user daemon-reload
 
 deactivate-systemd-services:
 	systemctl --user disable ${NAME}.service
