@@ -28,7 +28,7 @@ class ParsingConfig():
     def __init__(self, config=None):
         if config:
             with open(config, 'r') as config_object:
-                self.config = yaml.load(config_object)
+                self.config = yaml.load(config_object, Loader=yaml.SafeLoader)
         else:
             self.config = None
 
