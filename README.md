@@ -1,8 +1,8 @@
 # Notify-package-update
-Post message for specific package update on Arch Linux to Slack channel (using incoming-webhook).
+Post message about upstream update for specific package on AUR (Arch User Repository) to Slack channel (using incoming-webhook).
 
 Using systemd user service and timer (available by adding `--user` to `systemctl`), package update will be posted
-every 1 hour.
+everyday at 12:00 if it exists.
 
 ## Usage:
 See `python notify-package-update --help`:
